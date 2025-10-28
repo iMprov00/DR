@@ -69,7 +69,7 @@ Telegram::Bot::Client.run(token) do |bot|
               chat_id: message.chat.id,
               animation: Faraday::UploadIO.new('go.gif', 'image/gif')
             )
-            bot.api.send_message(chat_id: message.chat.id, text: 'Я бы никогда не догадался! Кажется ты смога узнать куда идти дальше, похоже тебя ждем Римус! Пошли скорей! @remus_dr_bot')
+            bot.api.send_message(chat_id: message.chat.id, text: 'Я бы никогда не догадался! Кажется ты смогла узнать куда идти дальше, похоже тебя ждем Римус! Пошли скорей! @remus_dr_bot')
             # Сбрасываем состояние
             user_states[message.chat.id] = nil
           else
@@ -90,7 +90,7 @@ Telegram::Bot::Client.run(token) do |bot|
 
         bot.api.send_message(
           chat_id: message.from.id, 
-          text: "«Стефания. Чтобы понять, куда смотреть дальше, вспомни кто изображен на гербе Гриффиндора."
+          text: "'Стефания. Чтобы понять, куда смотреть дальше, вспомни кто изображен на гербе Гриффиндора.'"
         )
         
         # Устанавливаем состояние "ожидание ответа" для этого пользователя
