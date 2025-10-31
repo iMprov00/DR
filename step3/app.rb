@@ -44,24 +44,46 @@ BREWING_STEPS = [
 # Метод для безопасной отправки с обработкой ошибок
 def safe_send(bot, chat_id, &block)
   retries = 0
+  max_retries = 3
+  
   begin
+    # Добавляем небольшую паузу перед каждым запросом
+    sleep(1) if retries == 0
+    
     block.call
   rescue Telegram::Bot::Exceptions::ResponseError => e
     if e.error_code == 429
-      retry_after = e.response['parameters']['retry_after'] || 30
+      retry_after = if e.response && e.response['parameters']
+                      e.response['parameters']['retry_after'] || 30
+                    else
+                      30
+                    end
       puts "Превышен лимит запросов. Ждем #{retry_after} секунд..."
       sleep(retry_after)
       retries += 1
-      retry if retries <= 3
+      retry if retries <= max_retries
     else
+      puts "Ошибка Telegram API: #{e.message}"
       raise e
     end
+  rescue StandardError => e
+    puts "Произошла непредвиденная ошибка: #{e.message}"
+    raise e
   end
 end
-
 # Определяем методы перед основным кодом
 def send_brewing_step(bot, chat_id, step_index)
   step = BREWING_STEPS[step_index]
+  
+  # Проверяем существование файла с гифкой
+  unless File.exist?(step[:gif])
+    puts "Файл не найден: #{step[:gif]}"
+    # Можно отправить текстовое сообщение об ошибке
+    bot.api.send_message(
+      chat_id: chat_id,
+      text: "Ошибка загрузки медиафайла для шага #{step_index + 1}"
+    )
+  end
   
   # Отправляем гифку шага с обработкой ошибок
   safe_send(bot, chat_id) do
@@ -106,12 +128,11 @@ def handle_step_completion(bot, message, user_progress)
     user_progress[user_id] ||= {}
     user_progress[user_id][:current_step] = step_index + 1
     
-    sleep(2) # Увеличиваем задержку
+    sleep(2)
     
     # Комментарий Снейпа между шагами
     snape_comments = [
       "Северус - Продолжайте... и постарайтесь не взорвать котел на этот раз.",
-      "Северус - Медленно... очень медленно...",
       "Северус - Вы удивительно некоординированы для волшебницы.",
       "Северус - Даже первокурсник справился бы лучше.",
       "Северус - Потрачено уже 10 минут... сколько можно?"
@@ -124,44 +145,37 @@ def handle_step_completion(bot, message, user_progress)
       )
     end
     
-    sleep(3) # Увеличиваем задержку
+    sleep(3)
     
     send_brewing_step(bot, user_id, step_index + 1)
   else
-    # Все шаги завершены - шутка от "друга"
+    # Все шаги завершены - объединяем сообщения
+    completion_text = <<~TEXT
+    P.S. как ты уже поняла, это не Дамблдор, а твой хороший друг, хихихихи
+    
+    *после небольшой паузы*
+    
+    Мда, вы даже не смогли справиться с этим заданием и приготовили... Что это? Сливочное пиво!? Хм... это мой любимый напиток.
+    
+    Так уж и быть, ставлю вам зачет мисс Токарева, но лишь в этот раз! А теперь уходите, вас ждут в следующей комнате: @dumbledore_dr_bot
+    TEXT
+
+    # Сначала отправляем реакцию Снейпа
+    if File.exist?('snape_reaction.gif')
+      safe_send(bot, user_id) do
+        bot.api.send_animation(
+          chat_id: user_id,
+          animation: Faraday::UploadIO.new('snape_reaction.gif', 'image/gif')
+        )
+      end
+      sleep(3)
+    end
+
+    # Затем одно объединенное текстовое сообщение
     safe_send(bot, user_id) do
       bot.api.send_message(
         chat_id: user_id,
-        text: "P.S. как ты уже поняла, это не Дамблдор, а твой хороший друг, хихихихи"
-      )
-    end
-    
-    sleep(4) # Увеличиваем задержку
-    
-    # Реакция Снейпа
-    safe_send(bot, user_id) do
-      bot.api.send_animation(
-        chat_id: user_id,
-        animation: Faraday::UploadIO.new('snape_reaction.gif', 'image/gif')
-      )
-    end
-    
-    sleep(3) # Увеличиваем задержку
-    
-    safe_send(bot, user_id) do
-      bot.api.send_message(
-        chat_id: user_id,
-        text: "Мда, вы даже не смогли справиться с этим заданием и приготовили... Что это? Сливочное пиво!? Хм... это мой любимый напиток."
-      )
-    end
-    
-    sleep(3) # Увеличиваем задержку
-    
-    safe_send(bot, user_id) do
-      bot.api.send_message(
-        chat_id: user_id,
-        text: "Так уж и быть, ставлю вам зачет мисс Токарева, но лишь в этот раз! А теперь уходите, вас ждут в следующей комнате: t.me/dumbledore_dr_bot",
-        parse_mode: 'Markdown'
+        text: completion_text
       )
     end
     
