@@ -160,7 +160,7 @@ def handle_step_completion(bot, message, user_progress)
     safe_send(bot, user_id) do
       bot.api.send_message(
         chat_id: user_id,
-        text: "Так уж и быть, ставлю вам зачет мисс Токарева, но лишь в этот раз! А теперь уходите, вас ждут в следующей комнате: [ссылка на следующего бота]",
+        text: "Так уж и быть, ставлю вам зачет мисс Токарева, но лишь в этот раз! А теперь уходите, вас ждут в следующей комнате: t.me/dumbledore_dr_bot",
         parse_mode: 'Markdown'
       )
     end
