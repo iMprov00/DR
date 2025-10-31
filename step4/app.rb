@@ -136,8 +136,7 @@ Telegram::Bot::Client.run(token) do |bot|
           send_with_delay(bot, message.chat.id, 6) do
             bot.api.send_message(
               chat_id: message.chat.id,
-              text: "Кажется, кто-то к тебе пришел... Иди поздоровайся!",
-              parse_mode: 'Markdown'
+              text: "Кажется, кто-то к тебе пришел... Иди поздоровайся! @harry_dr_bot"
             )
           end
           
